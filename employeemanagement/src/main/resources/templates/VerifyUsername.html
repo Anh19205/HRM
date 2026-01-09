@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Verify Username</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #f3f4f6;
+      padding: 16px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 400px;
+      background: #fff;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      font-weight: 700;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      background: #1976d2;
+      color: white;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .loading {
+      text-align: center;
+      font-size: 14px;
+    }
+
+    .error {
+      color: red;
+      text-align: center;
+      margin-top: 12px;
+    }
+
+    .success {
+      color: #1976d2;
+      text-align: center;
+      margin-top: 12px;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <h2>Verify Username</h2>
+
+  <form id="verifyForm">
+    <div class="form-group">
+      <input
+        type="text"
+        id="username"
+        placeholder="Username"
+        required
+      />
+    </div>
+
+    <button type="submit" id="submitBtn">Verify Username</button>
+  </form>
+
+  <div class="loading" id="loading" style="display:none;">Verifying...</div>
+  <div class="error" id="error"></div>
+  <div class="success" id="success"></div>
+</div>
+
+<script>
+  const form = document.getElementById('verifyForm');
+  const usernameInput = document.getElementById('username');
+  const submitBtn = document.getElementById('submitBtn');
+  const loadingEl = document.getElementById('loading');
+  const errorEl = document.getElementById('error');
+  const successEl = document.getElementById('success');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errorEl.textContent = '';
+    successEl.textContent = '';
+
+    const username = usernameInput.value.trim();
+    if (!username) return;
+
+    submitBtn.disabled = true;
+    loadingEl.style.display = 'block';
+
+    try {
+      const res = await fetch(
+        `https://employee-management-app-gdm5.onrender.com/verify-username/${username}`,
+        { method: 'GET' }
+      );
+
+      submitBtn.disabled = false;
+      loadingEl.style.display = 'none';
+
+      if (res.ok) {
+        successEl.textContent = 'Username verified! Redirecting to reset password...';
+        setTimeout(() => {
+          window.location.href = `reset-password.html?username=${encodeURIComponent(username)}`;
+        }, 1000);
+      } else {
+        const data = await res.json();
+        errorEl.textContent = data.message || 'Username not found.';
+      }
+    } catch (err) {
+      submitBtn.disabled = false;
+      loadingEl.style.display = 'none';
+      errorEl.textContent = 'Something went wrong. Please try again later.';
+    }
+  });
+</script>
+
+</body>
+</html>
