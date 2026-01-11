@@ -24,6 +24,7 @@
     .loading, .error { text-align: center; padding: 5rem; color: #6c757d; }
     .toast-container { position: fixed; top: 20px; right: 20px; z-index: 1050; }
   </style>
+  
 </head>
 <body>
    <div th:replace="Navbar :: navbar"></div>
@@ -76,6 +77,19 @@
 </div>
 
 <script>
+  function authFetch(url, options = {}) {
+  const token = localStorage.getItem("token");
+
+  return fetch(url, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + token,
+      ...(options.headers || {})
+    }
+  });
+}
+
   const API_BASE = '/api'; 
     let employees = [], departments = [];
 
@@ -91,8 +105,8 @@
     document.getElementById('tableContainer').innerHTML = '<div class="loading">Đang tải...</div>';
     try {
       const [empRes, deptRes] = await Promise.all([
-        fetch(`${API_BASE}/employees`),
-        fetch(`${API_BASE}/departments`)
+        authFetch(`${API_BASE}/employees`),
+        authFetch(`${API_BASE}/departments`)
       ]);
       if (!empRes.ok || !deptRes.ok) throw new Error('Tải dữ liệu thất bại');
       employees = await empRes.json();
@@ -109,8 +123,10 @@
   function renderFilters() {
     const deptSelect = document.getElementById('deptFilter');
     deptSelect.innerHTML = '<option value="all">Tất cả phòng ban</option>';
-    departments.forEach(d => deptSelect.innerHTML += `<option value="${d.id}">${d.name}</option>`);
-  }
+// Trong hàm renderFilters()
+departments.forEach(d => {
+  deptSelect.innerHTML += `<option value="${Number(d.id)}">${d.name}</option>`;
+});  }
 
   function renderTable() {
     const search = document.getElementById('search').value.toLowerCase();
@@ -120,7 +136,7 @@
     let filtered = employees.filter(e => {
       const nameEmail = `${e.firstName} ${e.lastName} ${e.email}`.toLowerCase();
       return nameEmail.includes(search) &&
-             (dept === 'all' || e.department?.id == dept) &&
+             ((dept === 'all' || String(e.department?.id) === dept)) &&
              (age === 'all' ||
               (age === 'under30' && e.age < 30) ||
               (age === '30-45' && e.age >= 30 && e.age <= 45) ||
@@ -160,7 +176,7 @@
   if (!confirm('Xác nhận xóa nhân viên?')) return;
 
   try {
-    const res = await fetch(`${API_BASE}/employees/${id}`, { method: 'DELETE' });
+    const res = await authFetch(`${API_BASE}/employees/${id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error('Xóa thất bại');
 
     // 👉 XÓA NGAY TRONG FRONTEND

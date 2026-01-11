@@ -187,6 +187,19 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
+  function authFetch(url, options = {}) {
+  const token = localStorage.getItem("token");
+
+  return fetch(url, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + token,
+      ...(options.headers || {})
+    }
+  });
+}
+
   const API_BASE = '/api'; 
 
   const departmentModal = new bootstrap.Modal(document.getElementById('departmentModal'));
@@ -215,7 +228,7 @@
   async function loadDepartments() {
     document.getElementById('tableContainer').innerHTML = '<div class="loading">Đang tải dữ liệu...</div>';
     try {
-      const res = await fetch(`${API_BASE}/departments`);
+      const res = await authFetch(`${API_BASE}/departments`);
       if (!res.ok) throw new Error('Không thể tải danh sách');
       allDepartments = await res.json();
       renderTable(allDepartments);
@@ -305,7 +318,7 @@
     const method = id ? 'PUT' : 'POST';
 
     try {
-      const res = await fetch(url, {
+      const res = await authFetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: nameInput.value.trim() })
@@ -325,7 +338,7 @@
     if (!confirm('Bạn có chắc chắn muốn xóa phòng ban này?\nHành động không thể hoàn tác.')) return;
 
     try {
-      const res = await fetch(`${API_BASE}/departments/${id}`, { method: 'DELETE' });
+      const res = await authFetch(`${API_BASE}/departments/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Xóa thất bại');
       showToast('Xóa thành công!', 'success');
       loadDepartments();

@@ -1,35 +1,53 @@
 package com.example.employeemanagement.security;
 
+import com.example.employeemanagement.model.Role;          
 import com.example.employeemanagement.model.User;
 import com.example.employeemanagement.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
-/** This class represents the custom user details service. */
+/**
+ * Custom UserDetailsService để load user từ database
+ */
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
 
-  /** The user repository. */
-  @Autowired
-  private UserRepository userRepository;
+    @Autowired
+    private UserRepository userRepository;
 
-  /**
-   * Load user by username.
-   *
-   * @param username The username
-   * @return The user details
-   * @throws UsernameNotFoundException If the username is not found
-   */
-  @Override
-  public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+    // Trong CustomUserDetailsService
+@Override
+public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
     User user = userRepository.findByUsername(username)
-        .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
+        .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
-    return new org.springframework.security.core.userdetails.User(user.getUsername(), user.getPassword(), new ArrayList<>());
-  }
+    System.out.println("Loaded user: " + username + " | Role: " + user.getRole());
+    System.out.println("Authorities: " + getAuthorities(user.getRole()));
+
+    return new org.springframework.security.core.userdetails.User(
+        user.getUsername(),
+        user.getPassword(),
+        user.isEnabled(),
+        true, true, true,
+        getAuthorities(user.getRole())
+    );
+}
+
+    /**
+     * Trả về danh sách quyền (authorities) dựa trên Role
+     */
+    private List<GrantedAuthority> getAuthorities(Role role) {
+        // Cách đơn giản: mỗi user chỉ có 1 role
+        return Collections.singletonList(
+                new SimpleGrantedAuthority("ROLE_" + role.name())
+        );
+    }
 }

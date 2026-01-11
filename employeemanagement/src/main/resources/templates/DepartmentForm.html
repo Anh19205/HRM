@@ -135,7 +135,7 @@
     toggleLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE}/departments/${id}`);
+      const res = await authFetch(`${API_BASE}/departments/${id}`);
       if (!res.ok) throw new Error(await res.text() || 'Không tìm thấy phòng ban');
 
       const data = await res.json();
@@ -193,7 +193,7 @@
       const url = id ? `${API_BASE}/departments/${id}` : `${API_BASE}/departments`;
       const method = id ? 'PUT' : 'POST';
 
-      const res = await fetch(url, {
+      const res = await authFetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(department)

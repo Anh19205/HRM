@@ -95,6 +95,19 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+  function authFetch(url, options = {}) {
+  const token = localStorage.getItem("token");
+
+  return fetch(url, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + token,
+      ...(options.headers || {})
+    }
+  });
+}
+
   const API_BASE = '/api';
   const token = localStorage.getItem('token');
   const username = localStorage.getItem('EMSusername') || 'Guest';
@@ -120,8 +133,8 @@
       const headers = { 'Authorization': `Bearer ${token}` };
 
       const [empRes, depRes] = await Promise.all([
-        fetch(`${API_BASE}/employees`, { headers }),
-        fetch(`${API_BASE}/departments`, { headers })
+        authFetch(`${API_BASE}/employees`, { headers }),
+        authFetch(`${API_BASE}/departments`, { headers })
       ]);
 
       if (empRes.status === 401 || depRes.status === 401) {

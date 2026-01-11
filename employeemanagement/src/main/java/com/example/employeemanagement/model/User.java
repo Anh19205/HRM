@@ -1,78 +1,68 @@
 package com.example.employeemanagement.model;
 
+import lombok.*;
 import javax.persistence.*;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Size;
 
-/** This class represents the user entity. */
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+/**
+ * Entity đại diện cho tài khoản người dùng trong hệ thống
+ */
 @Entity
 @Table(name = "users")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@ToString(exclude = {"password"}) // quan trọng: không in password ra log
 public class User {
 
-  /** The user ID. */
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-  /** The username. */
-  @Column(nullable = false, unique = true)
-  private String username;
+    @NotBlank(message = "Username không được để trống")
+    @Size(min = 4, max = 50, message = "Username phải từ 4-50 ký tự")
+    @Column(nullable = false, unique = true, length = 50)
+    private String username;
 
-  /** The password. */
-  @Column(nullable = false)
-  private String password;
+    @NotBlank(message = "Password không được để trống")
+    @Column(nullable = false, length = 255) 
+    private String password;
 
-  // Getters and Setters
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private Role role;
 
-  /**
-   * Gets the user ID.
-   *
-   * @return The user ID
-   */
-  public Long getId() {
-    return id;
-  }
+    @Column(nullable = false)
+    private boolean enabled = true;
 
-  /**
-   * Sets the user ID.
-   *
-   * @param id The user ID
-   */
-  public void setId(Long id) {
-    this.id = id;
-  }
+    // Các trường bổ sung rất hữu ích cho thực tế
+    @Column(length = 100)
+    private String fullName;           // Họ tên đầy đủ (đồng bộ với Employee)
 
-  /**
-   * Gets the username.
-   *
-   * @return The username
-   */
-  public String getUsername() {
-    return username;
-  }
+    @Column(length = 100)
+    private String email;              // email (có thể đồng bộ với Employee)
 
-  /**
-   * Sets the username.
-   *
-   * @param username The username
-   */
-  public void setUsername(String username) {
-    this.username = username;
-  }
+    private boolean accountNonExpired = true;
+    private boolean accountNonLocked = true;
+    private boolean credentialsNonExpired = true;
 
-  /**
-   * Gets the password.
-   *
-   * @return The password
-   */
-  public String getPassword() {
-    return password;
-  }
+    // Quan hệ 1-1 với Employee (nếu cần truy vấn ngược)
+    @OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
+    @JsonIgnore
+    private Employee employee;
 
-  /**
-   * Sets the password.
-   *
-   * @param password The password
-   */
-  public void setPassword(String password) {
-    this.password = password;
-  }
+    // Helper method tiện lợi
+    public boolean isAdmin() {
+        return Role.ADMIN.equals(this.role);
+    }
+
+    public boolean isEmployee() {
+        return Role.EMPLOYEE.equals(this.role);
+    }
+    
 }

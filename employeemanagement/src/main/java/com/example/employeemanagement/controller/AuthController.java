@@ -14,7 +14,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
-
+import com.example.employeemanagement.model.Role;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -67,20 +67,29 @@ public class AuthController {
   @PostMapping("/register")
 public ResponseEntity<?> registerUser(@RequestBody User user) {
 
-    System.out.println(">>> REGISTER API CALLED: " + user.getUsername());
-
     if (userRepository.findByUsername(user.getUsername()).isPresent()) {
-        return ResponseEntity
-            .status(HttpStatus.CONFLICT)
-            .body(Map.of("message", "Username already exists"));
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of("message", "Username already exists"));
     }
 
+    // Mặc định role là EMPLOYEE khi tự đăng ký
+    if (user.getRole() == null) {
+        user.setRole(Role.EMPLOYEE);
+    }
+
+    // Chỉ ADMIN mới được tạo tài khoản ADMIN hoặc DEPARTMENT
+    // (nên xử lý logic này ở API quản lý user riêng, không ở register công khai)
+
     user.setPassword(passwordEncoder.encode(user.getPassword()));
+    user.setEnabled(true);
     userRepository.save(user);
 
-    return ResponseEntity.ok(Map.of("message", "User registered successfully"));
+    return ResponseEntity.ok(Map.of(
+        "message", "User registered successfully",
+        "username", user.getUsername(),
+        "role", user.getRole().name()
+    ));
 }
-
 
   /**
    * Authenticate user API.

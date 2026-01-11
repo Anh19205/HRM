@@ -77,12 +77,25 @@ body { background: #f4f6f9; }
 </div>
 
 <script>
+  function authFetch(url, options = {}) {
+  const token = localStorage.getItem("token");
+
+  return fetch(url, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + token,
+      ...(options.headers || {})
+    }
+  });
+}
+
 const EMP_API = 'http://localhost:8080/api/employees';
 const DEP_API = 'http://localhost:8080/api/departments';
 
 async function loadDashboard() {
-  const employees = await fetch(EMP_API).then(r => r.json());
-  const departments = await fetch(DEP_API).then(r => r.json());
+  const employees = await authFetch(EMP_API).then(r => r.json());
+  const departments = await authFetch(DEP_API).then(r => r.json());
 
   // TOTALS
   document.getElementById('totalEmployees').innerText = employees.length;

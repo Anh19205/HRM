@@ -29,11 +29,10 @@ public class EmployeeController {
    * @return List of all employees
    */
   @Operation(summary = "Get all employees", description = "Retrieve a list of all employees")
-  @GetMapping
-  public List<Employee> getAllEmployees() {
-    return employeeService.getAllEmployees();
+    @GetMapping
+    public List<Employee> getAllEmployees() {
+      return employeeService.getAllEmployees();
   }
-
   /**
    * Get employee by ID API.
    *
@@ -65,10 +64,10 @@ public class EmployeeController {
    */
   @Operation(summary = "Create a new employee", description = "Create a new employee record")
   @PostMapping
-  public Employee createEmployee(@RequestBody Employee employee) {
-    return employeeService.saveEmployee(employee);
-  }
-
+public ResponseEntity<Employee> createEmployee(@RequestBody Employee employee) {
+    Employee saved = employeeService.createEmployee(employee);
+    return ResponseEntity.status(201).body(saved);
+}
   /**
    * Update an existing employee API.
    *
@@ -98,7 +97,7 @@ public class EmployeeController {
     employee.setDepartment(employeeDetails.getDepartment());
     employee.setAge(employeeDetails.getAge());
 
-    Employee updatedEmployee = employeeService.saveEmployee(employee);
+Employee updatedEmployee = employeeService.updateEmployee(id, employeeDetails);
     return ResponseEntity.ok(updatedEmployee);
   }
 

@@ -34,9 +34,12 @@ public class Employee {
   /** The department of the employee. */
   @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "department_id", nullable = false)
-  @JsonBackReference
+  
   private Department department;
 
   /** The age of the employee. */
   private int age;
+  @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "user_id")
+    private User user;
 }

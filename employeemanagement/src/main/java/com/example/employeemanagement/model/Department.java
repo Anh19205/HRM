@@ -4,6 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import javax.persistence.*;
+
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import java.util.List;
 
@@ -25,6 +28,6 @@ public class Department {
 
   /** The list of employees in the department. */
   @OneToMany(mappedBy = "department", cascade = CascadeType.ALL)
-  @JsonManagedReference
+  @JsonIgnore
   private List<Employee> employees;
 }

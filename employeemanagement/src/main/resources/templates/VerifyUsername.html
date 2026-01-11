@@ -110,6 +110,19 @@
 </div>
 
 <script>
+  function authFetch(url, options = {}) {
+  const token = localStorage.getItem("token");
+
+  return fetch(url, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + token,
+      ...(options.headers || {})
+    }
+  });
+}
+
   const form = document.getElementById('verifyForm');
   const usernameInput = document.getElementById('username');
   const submitBtn = document.getElementById('submitBtn');
@@ -129,7 +142,7 @@
     loadingEl.style.display = 'block';
 
     try {
-      const res = await fetch(
+      const res = await authFetch(
         `https://employee-management-app-gdm5.onrender.com/verify-username/${username}`,
         { method: 'GET' }
       );

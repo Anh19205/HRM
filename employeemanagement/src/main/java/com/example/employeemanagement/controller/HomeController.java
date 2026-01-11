@@ -19,6 +19,10 @@ public class HomeController {
     public String employeeForm() {
         return "EmployeeForm";   // -> templates/EmployeeForm.html
     }
+    @GetMapping("/Admin")
+    public String admin() {
+        return "Admin"; // templates/Admin.html
+    }
 
     @GetMapping("/login")
     public String login() {
