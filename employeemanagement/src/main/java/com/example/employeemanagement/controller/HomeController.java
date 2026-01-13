@@ -14,6 +14,14 @@ public class HomeController {
     public String employeeList() {
         return "EmployeeList";   // -> templates/EmployeeList.html
     }
+    @GetMapping("/schedule")
+    public String schedule() {
+        return "work-schedules";   // -> templates/Schedule.html
+    }
+    @GetMapping("/contracts")  
+    public String contractList() {
+        return "Contracts";   // -> templates/ContractList.html
+    }
 
     @GetMapping("/employee-form")
     public String employeeForm() {

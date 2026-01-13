@@ -51,12 +51,15 @@ protected void configure(HttpSecurity http) throws Exception {
             // PAGES (cho load HTML)
             .antMatchers(
                 "/Admin",
+                "/schedule",
                 "/dashboard",
                 "/employees",
                 "/employee-form",
+                "/contracts",
                 "/departments",
                 "/department-form",
-                "/profile"
+                "/profile",
+                "/workscheduleview/**"
             ).permitAll()
 
             // API

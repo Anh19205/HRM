@@ -17,4 +17,5 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
    */
   @Query("SELECT e FROM Employee e JOIN FETCH e.department")
   List<Employee> findAllWithDepartments();
+  
 }

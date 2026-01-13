@@ -102,23 +102,44 @@
   }
 
   async function loadData() {
-    document.getElementById('tableContainer').innerHTML = '<div class="loading">Đang tải...</div>';
-    try {
-      const [empRes, deptRes] = await Promise.all([
-        authFetch(`${API_BASE}/employees`),
-        authFetch(`${API_BASE}/departments`)
-      ]);
-      if (!empRes.ok || !deptRes.ok) throw new Error('Tải dữ liệu thất bại');
-      employees = await empRes.json();
-      departments = await deptRes.json();
+  document.getElementById('tableContainer').innerHTML = '<div class="loading">Đang tải...</div>';
 
-      renderFilters();
-      renderTable();
-      updateStats();
-    } catch (err) {
-      document.getElementById('tableContainer').innerHTML = `<div class="error">Lỗi: ${err.message}</div>`;
-    }
+  try {
+    const [empRes, deptRes] = await Promise.all([
+      authFetch(`${API_BASE}/employees`),
+      authFetch(`${API_BASE}/departments`)
+    ]);
+
+    if (!empRes.ok || !deptRes.ok) throw new Error('Tải dữ liệu thất bại');
+
+    employees = await empRes.json();
+    departments = await deptRes.json();
+
+    // 🔥 LOAD LOẠI HỢP ĐỒNG CHO TỪNG NHÂN VIÊN
+    await Promise.all(
+      employees.map(e => loadContractType(e))
+    );
+
+    renderFilters();
+    renderTable();
+    updateStats();
+
+  } catch (err) {
+    document.getElementById('tableContainer').innerHTML =
+      `<div class="error">Lỗi: ${err.message}</div>`;
   }
+}
+
+  async function loadContractType(emp) {
+  const res = await authFetch(
+    `/api/contracts/employee/${emp.id}/contract-type`
+  );
+  if (!res.ok) return;
+
+  const data = await res.json();
+  emp.contractType = data.contractType;
+}
+
 
   function renderFilters() {
     const deptSelect = document.getElementById('deptFilter');
@@ -128,41 +149,85 @@ departments.forEach(d => {
   deptSelect.innerHTML += `<option value="${Number(d.id)}">${d.name}</option>`;
 });  }
 
-  function renderTable() {
-    const search = document.getElementById('search').value.toLowerCase();
-    const dept = document.getElementById('deptFilter').value;
-    const age = document.getElementById('ageFilter').value;
+ function renderTable() {
+  const search = document.getElementById('search').value.toLowerCase();
+  const dept = document.getElementById('deptFilter').value;
+  const age = document.getElementById('ageFilter').value;
 
-    let filtered = employees.filter(e => {
-      const nameEmail = `${e.firstName} ${e.lastName} ${e.email}`.toLowerCase();
-      return nameEmail.includes(search) &&
-             ((dept === 'all' || String(e.department?.id) === dept)) &&
-             (age === 'all' ||
-              (age === 'under30' && e.age < 30) ||
-              (age === '30-45' && e.age >= 30 && e.age <= 45) ||
-              (age === 'over45' && e.age > 45));
-    });
+  let filtered = employees.filter(e => {
+    const nameEmail = `${e.firstName} ${e.lastName} ${e.email}`.toLowerCase();
+    return nameEmail.includes(search) &&
+           ((dept === 'all' || String(e.department?.id) === dept)) &&
+           (age === 'all' ||
+            (age === 'under30' && e.age < 30) ||
+            (age === '30-45' && e.age >= 30 && e.age <= 45) ||
+            (age === 'over45' && e.age > 45));
+  });
 
-    let html = '<table class="table table-hover"><thead><tr><th>Nhân viên</th><th>Email</th><th>Phòng ban</th><th>Tuổi</th><th>Thao tác</th></tr></thead><tbody>';
-    filtered.forEach(e => {
-      const initials = (e.firstName[0] + e.lastName[0]).toUpperCase();
-      html += `
+  // ── Bảng mới có thêm cột Loại hợp đồng ───────────────────────────────
+  let html = `
+    <table class="table table-hover">
+      <thead>
         <tr>
-          <td><div class="employee-cell"><div class="avatar">${initials}</div><div><strong>${e.firstName} ${e.lastName}</strong></div></div></td>
-          <td>${e.email}</td>
-          <td>${e.department?.name || 'Chưa phân'}</td>
-          <td>${e.age}</td>
-          <td>
-            <a href="/employee-form?id=${e.id}" class="btn btn-sm btn-outline-primary">Sửa</a>
-            <button class="btn btn-sm btn-danger" onclick="deleteEmployee(${e.id})">Xóa</button>
-          </td>
-        </tr>`;
-    });
-    html += '</tbody></table>';
-    document.getElementById('tableContainer').innerHTML = filtered.length ? html : '<div class="error">Không tìm thấy nhân viên nào</div>';
+          <th>Nhân viên</th>
+          <th>Email</th>
+          <th>Phòng ban</th>
+          <th>Tuổi</th>
+          <th>Loại hợp đồng</th>           
+          <th>Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>`;
 
-    document.getElementById('visible').textContent = filtered.length;
-  }
+  filtered.forEach(e => {
+    const initials = (e.firstName[0] + e.lastName[0]).toUpperCase();
+    
+    // Xử lý hiển thị loại hợp đồng đẹp hơn
+    let contractBadge = '—';
+    if (e.contractType) {
+      const typeMap = {
+        'FULL_TIME': { text: 'Toàn thời gian', color: 'success' },
+        'PART_TIME': { text: 'Bán thời gian', color: 'info' },
+        'INTERN':    { text: 'Thực tập', color: 'warning' }
+      };
+      const config = typeMap[e.contractType] || { text: e.contractType, color: 'secondary' };
+      contractBadge = `<span class="badge bg-${config.color}">${config.text}</span>`;
+    }
+
+    html += `
+      <tr>
+        <td>
+          <div class="employee-cell">
+            <div class="avatar">${initials}</div>
+            <div><strong>${e.firstName} ${e.lastName}</strong></div>
+          </div>
+        </td>
+        <td>${e.email}</td>
+        <td>${e.department?.name || 'Chưa phân'}</td>
+        <td>${e.age}</td>
+        <td>${contractBadge}</td>                    <!-- Hiển thị badge -->
+        <td>
+          <a href="/employee-form?id=${e.id}" class="btn btn-sm btn-outline-primary">Sửa</a>
+          <button class="btn btn-sm btn-outline-secondary" 
+                  onclick="window.location.href='/contracts?employeeId=${e.id}'">
+            Hợp đồng
+          </button>
+          <button class="btn btn-sm btn-outline-info" 
+                  onclick="window.location.href='/schedule?employeeId=${e.id}'">
+            Lịch
+          </button>          
+          <button class="btn btn-sm btn-danger" onclick="deleteEmployee(${e.id})">Xóa</button>
+        </td>
+      </tr>`;
+  });
+
+  html += '</tbody></table>';
+
+  document.getElementById('tableContainer').innerHTML = 
+    filtered.length ? html : '<div class="error">Không tìm thấy nhân viên nào</div>';
+
+  document.getElementById('visible').textContent = filtered.length;
+}
 
   function updateStats() {
     const total = employees.length;
@@ -211,6 +276,11 @@ departments.forEach(d => {
 
   // Khởi tạo
   loadData();
+
+
 </script>
+
+
+
 </body>
 </html>

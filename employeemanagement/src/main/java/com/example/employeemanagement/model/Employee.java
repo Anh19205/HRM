@@ -4,12 +4,12 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import javax.persistence.*;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
-/**
- * This class represents an Employee entity. Each employee has an ID, first name, last name, email,
- * department, and age.
- */
+import javax.persistence.*;
+import java.util.List;  
+    
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -42,4 +42,8 @@ public class Employee {
   @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "user_id")
     private User user;
+    @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)
+@JsonManagedReference
+private List<WorkSchedule> workSchedules;
+
 }
