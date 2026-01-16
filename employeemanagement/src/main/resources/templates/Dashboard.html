@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Employee Management Dashboard</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body { background: #f4f6f9; }
+.card {
+  border-radius: 14px;
+  box-shadow: 0 10px 35px rgba(0,0,0,.08);
+}
+</style>
+</head>
+
+<body>
+<div class="container my-4">
+            <div th:replace="Navbar :: navbar"></div>
+
+  <!-- HEADER -->
+  <div class="p-4 mb-4 text-white rounded"
+       style="background: linear-gradient(135deg,#1E3C72,#2A5298);">
+    <h4>Welcome back, <span id="username">Admin</span> 👋</h4>
+    <p class="mb-0">Employee Management Dashboard</p>
+  </div>
+
+  <!-- METRICS -->
+  <div class="row g-4 mb-4">
+    <div class="col-md-4">
+      <div class="card p-3 text-center">
+        <h6>Total Employees</h6>
+        <h2 id="totalEmployees">0</h2>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card p-3 text-center">
+        <h6>Total Departments</h6>
+        <h2 id="totalDepartments">0</h2>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card p-3 text-center">
+        <h6>Average Age</h6>
+        <h2 id="averageAge">0</h2>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHARTS -->
+  <div class="row g-4">
+    <div class="col-md-6">
+      <div class="card p-3">
+        <h6>Employees by Department</h6>
+        <canvas id="departmentChart"></canvas>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="card p-3">
+        <h6>Age Distribution</h6>
+        <canvas id="ageChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- RECENT EMPLOYEES -->
+  <div class="card p-3 mt-4">
+    <h6>Recent Employees</h6>
+    <ul id="recentEmployees" class="list-group list-group-flush"></ul>
+  </div>
+
+</div>
+
+<script>
+  function authFetch(url, options = {}) {
+  const token = localStorage.getItem("token");
+
+  return fetch(url, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + token,
+      ...(options.headers || {})
+    }
+  });
+}
+
+const EMP_API = 'http://localhost:8080/api/employees';
+const DEP_API = 'http://localhost:8080/api/departments';
+
+async function loadDashboard() {
+  const employees = await authFetch(EMP_API).then(r => r.json());
+  const departments = await authFetch(DEP_API).then(r => r.json());
+
+  // TOTALS
+  document.getElementById('totalEmployees').innerText = employees.length;
+  document.getElementById('totalDepartments').innerText = departments.length;
+
+  // AVG AGE
+  const avgAge = employees.reduce((s, e) => s + e.age, 0) / employees.length;
+  document.getElementById('averageAge').innerText = avgAge.toFixed(1);
+
+  drawDepartmentChart(departments);
+  drawAgeChart(employees);
+  showRecentEmployees(employees);
+}
+
+function drawDepartmentChart(departments) {
+  const labels = departments.map(d => d.name);
+  const data = departments.map(d => d.employees.length);
+
+  new Chart(document.getElementById('departmentChart'), {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Employees',
+        data: data,
+        backgroundColor: '#42A5F5'
+      }]
+    },
+    options: {
+      scales: { y: { beginAtZero: true } }
+    }
+  });
+}
+
+function drawAgeChart(employees) {
+  const ranges = { '20-29': 0, '30-39': 0, '40-49': 0, '50+': 0 };
+
+  employees.forEach(e => {
+    if (e.age < 30) ranges['20-29']++;
+    else if (e.age < 40) ranges['30-39']++;
+    else if (e.age < 50) ranges['40-49']++;
+    else ranges['50+']++;
+  });
+
+  new Chart(document.getElementById('ageChart'), {
+    type: 'pie',
+    data: {
+      labels: Object.keys(ranges),
+      datasets: [{
+        data: Object.values(ranges),
+        backgroundColor: ['#FF6384','#36A2EB','#FFCE56','#4BC0C0']
+      }]
+    }
+  });
+}
+
+function showRecentEmployees(employees) {
+  const list = document.getElementById('recentEmployees');
+  list.innerHTML = '';
+
+  employees
+    .sort((a, b) => b.id - a.id)
+    .slice(0, 5)
+    .forEach(e => {
+      const li = document.createElement('li');
+      li.className = 'list-group-item';
+      li.innerText = `${e.firstName} ${e.lastName} - ${e.department.name}`;
+      list.appendChild(li);
+    });
+}
+
+window.onload = loadDashboard;
+</script>
+
+</body>
+</html>
