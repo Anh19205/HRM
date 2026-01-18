@@ -116,26 +116,102 @@
     }
 
     .toast-container { position: fixed; top: 20px; right: 20px; z-index: 1055; }
+  /* ===== HERO (GIỐNG EMPLOYEE LIST) ===== */
+.list-hero {
+  background: linear-gradient(135deg, #1E3C72, #2A5298);
+  border-radius: 20px;
+  padding: 28px;
+  color: #fff;
+  box-shadow: 0 25px 60px rgba(30, 60, 114, 0.35);
+  margin: 1.5rem 0 1.8rem;
+}
+
+.list-hero h1 {
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.list-hero p {
+  opacity: 0.85;
+  margin-bottom: 0;
+}
+
+/* ===== STATS (MATCH EMPLOYEE LIST) ===== */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.2rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  border-radius: 18px;
+  padding: 22px;
+  text-align: center;
+  box-shadow: 0 15px 40px rgba(15, 23, 42, 0.08);
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 25px 55px rgba(15, 23, 42, 0.12);
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+/* ===== GRADIENT CARDS ===== */
+.stat-primary {
+  background: linear-gradient(135deg, #36D1DC, #5B86E5);
+  color: #fff;
+}
+
+.stat-info {
+  background: linear-gradient(135deg, #1E3C72, #2A5298);
+  color: #fff;
+}
+
+.stat-success {
+  background: linear-gradient(135deg, #11998E, #38EF7D);
+  color: #fff;
+}
+
+.stat-warning {
+  background: linear-gradient(135deg, #F7971E, #FFD200);
+  color: #fff;
+}
+
+.stat-card * {
+  color: #fff !important;
+}
+
   </style>
 </head>
 <body>
  <div th:replace="Navbar :: navbar"></div>
 <div class="container">
 
-  <div class="top-bar">
-    <div>
-      <h1>Phòng ban</h1>
-      <div class="subtitle">Quản lý & tổ chức các phòng ban trong công ty</div>
-    </div>
-    <div>
-      <button class="btn btn-outline" id="exportBtn">
-        <span class="material-icons">download</span> Export CSV
-      </button>
-      <button class="btn btn-primary" id="addDepartmentBtn">
-        <span class="material-icons">add</span> Thêm phòng ban
-      </button>
-    </div>
+  <div class="list-hero d-flex justify-content-between align-items-center flex-wrap gap-3">
+  <div>
+    <h1>Danh sách Phòng ban</h1>
+    <p>Quản lý & tổ chức các phòng ban trong công ty</p>
   </div>
+
+  <div class="d-flex gap-2">
+    <button class="btn btn-light d-inline-flex align-items-center" id="exportBtn">
+      <span class="material-icons me-1">download</span>
+      Export CSV
+    </button>
+
+    <button class="btn btn-warning d-inline-flex align-items-center" id="addDepartmentBtn">
+      <span class="material-icons me-1">add</span>
+      Thêm phòng ban
+    </button>
+  </div>
+</div>
+
 
   <!-- Stats -->
   <div class="stats" id="statsContainer"></div>
@@ -275,14 +351,34 @@
     );
   }
 
-  function renderStats(depts) {
-    const total = depts.length;
-    document.getElementById('statsContainer').innerHTML = `
-      <div class="card"><h3>Tổng phòng ban</h3><div class="number">${total}</div></div>
-      <div class="card"><h3>Đang hiển thị</h3><div class="number">${total}</div></div>
-      <div class="card"><h3>Hành động nhanh</h3><p>➕ Thêm<br>✏️ Sửa/Xóa</p></div>
-    `;
-  }
+function renderStats(depts) {
+  const total = allDepartments.length;
+  const visible = depts.length;
+
+  document.getElementById('statsContainer').innerHTML = `
+    <div class="stat-card stat-primary">
+      <div>Tổng phòng ban</div>
+      <div class="stat-value">${total}</div>
+    </div>
+
+    <div class="stat-card stat-info">
+      <div>Đang hiển thị</div>
+      <div class="stat-value">${visible}</div>
+    </div>
+
+    <div class="stat-card stat-success">
+      <div>Tổng nhân viên</div>
+      <div class="stat-value">
+        ${allDepartments.reduce((s,d)=>s+(d.employees?.length||0),0)}
+      </div>
+    </div>
+
+    <div class="stat-card stat-warning">
+      <div>Hành động</div>
+      <div class="stat-value">CRUD</div>
+    </div>
+  `;
+}
 
   // Mở modal thêm mới
   document.getElementById('addDepartmentBtn').addEventListener('click', () => {

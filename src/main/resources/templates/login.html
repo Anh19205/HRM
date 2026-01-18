@@ -157,10 +157,6 @@
       <div class="error-message" id="errorMessage"></div>
     </form>
 
-    <div class="links">
-      <p>Chưa có tài khoản? <a href="/register">Đăng ký</a></p>
-      <p>Quên mật khẩu? <a href="/resetPassword">Khôi phục</a></p>
-    </div>
   </div>
 </div>
 
@@ -236,9 +232,34 @@
       localStorage.setItem('EMSusername', username);
 
       showToast(`Chào mừng trở lại, ${username}!`, 'success');
-      setTimeout(() => {
-        window.location.href = new URLSearchParams(window.location.search).get('from') || '/';
-      }, 1500);
+localStorage.setItem('token', data.token);
+localStorage.setItem('EMSusername', username);
+
+// 👉 LẤY ROLE USER
+const meRes = await fetch(`${API_BASE}/api/auth/me`, {
+  headers: {
+    "Authorization": "Bearer " + data.token
+  }
+});
+
+if (!meRes.ok) {
+  throw new Error("Không lấy được thông tin người dùng");
+}
+
+const me = await meRes.json();
+const role = me.role;
+
+//showToast(`Chào mừng trở lại, ${username}!`, 'success');
+
+setTimeout(() => {
+  if (role === 'ADMIN') {
+    window.location.href = '/Admin';
+  } else {
+    // giữ nguyên hành vi cũ
+    window.location.href =
+      new URLSearchParams(window.location.search).get('from') || '/';
+  }
+}, 1200);
 
     } catch (err) {
       errorMessage.textContent = err.message || 'Lỗi kết nối server. Vui lòng thử lại.';

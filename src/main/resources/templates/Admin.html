@@ -133,6 +133,74 @@
     }
 
     .toast-container { position: fixed; top: 20px; right: 20px; z-index: 1055; }
+  /* ===== ADMIN HERO (GIỐNG EMPLOYEE LIST) ===== */
+.admin-hero {
+  background: linear-gradient(135deg, #1E3C72, #2A5298);
+  border-radius: 20px;
+  padding: 28px;
+  color: #fff;
+  box-shadow: 0 25px 60px rgba(30, 60, 114, 0.35);
+  margin-bottom: 1.8rem;
+}
+
+.admin-hero h1 {
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.admin-hero p {
+  opacity: 0.85;
+  margin-bottom: 0;
+}
+
+/* ===== ADMIN STATS (DASHBOARD STYLE) ===== */
+.admin-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.2rem;
+  margin-bottom: 2rem;
+}
+
+.admin-stat-card {
+  border-radius: 18px;
+  padding: 22px;
+  text-align: center;
+  color: #fff;
+  box-shadow: 0 15px 40px rgba(15, 23, 42, 0.12);
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+
+.admin-stat-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 30px 65px rgba(0,0,0,0.18);
+}
+
+.admin-stat-card div:first-child {
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.admin-stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+/* màu giống dashboard */
+.stat-primary {
+  background: linear-gradient(135deg, #36D1DC, #5B86E5);
+}
+
+.stat-success {
+  background: linear-gradient(135deg, #11998E, #38EF7D);
+}
+
+.stat-danger {
+  background: linear-gradient(135deg, #ED213A, #93291E);
+}
+
+.admin-hero {
+  margin-top: 1.5rem;
+}
   </style>
 </head>
 <body>
@@ -140,23 +208,28 @@
 
   <div class="container">
 
-    <div class="top-bar">
-      <div>
-        <h1>Quản lý Tài khoản</h1>
-        <div class="subtitle">Quản lý người dùng hệ thống (Admin)</div>
-      </div>
-      <div>
-        <button class="btn btn-outline" id="exportBtn">
-          <span class="material-icons">download</span> Export CSV
-        </button>
-        <button class="btn btn-primary" id="addUserBtn">
-          <span class="material-icons">add</span> Thêm tài khoản
-        </button>
-      </div>
-    </div>
+    <div class="admin-hero d-flex justify-content-between align-items-center flex-wrap gap-3">
+  <div>
+    <h1>Quản lý Tài khoản</h1>
+    <p>Quản lý người dùng hệ thống (Admin)</p>
+  </div>
+
+  <div class="d-flex gap-2">
+    <button class="btn btn-light d-inline-flex align-items-center" id="exportBtn">
+      <span class="material-icons me-1">download</span>
+      Export CSV
+    </button>
+
+    <button class="btn btn-warning d-inline-flex align-items-center" id="addUserBtn">
+      <span class="material-icons me-1">add</span>
+      Thêm tài khoản
+    </button>
+  </div>
+</div>
+
 
     <!-- Stats -->
-    <div class="stats" id="statsContainer"></div>
+<div class="admin-stats" id="statsContainer"></div>
 
     <!-- Search -->
     <div class="search-container">
@@ -339,15 +412,28 @@
       );
     }
 
-    function renderStats(users) {
-      const total = users.length;
-      const active = users.filter(u => u.enabled).length;
-      document.getElementById('statsContainer').innerHTML = `
-        <div class="card"><h3>Tổng tài khoản</h3><div class="number">${total}</div></div>
-        <div class="card"><h3>Đang hoạt động</h3><div class="number">${active}</div></div>
-        <div class="card"><h3>Vô hiệu hóa</h3><div class="number">${total - active}</div></div>
-      `;
-    }
+function renderStats(users) {
+  const total = users.length;
+  const active = users.filter(u => u.enabled).length;
+  const inactive = total - active;
+
+  document.getElementById('statsContainer').innerHTML = `
+    <div class="admin-stat-card stat-primary">
+      <div>Tổng tài khoản</div>
+      <div class="admin-stat-value">${total}</div>
+    </div>
+
+    <div class="admin-stat-card stat-success">
+      <div>Đang hoạt động</div>
+      <div class="admin-stat-value">${active}</div>
+    </div>
+
+    <div class="admin-stat-card stat-danger">
+      <div>Vô hiệu hóa</div>
+      <div class="admin-stat-value">${inactive}</div>
+    </div>
+  `;
+}
 
     // Mở modal thêm mới
     document.getElementById('addUserBtn').addEventListener('click', () => {
