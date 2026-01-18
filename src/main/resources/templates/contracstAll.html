@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản lý Hợp đồng Lao động</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    body { background: #f4f6f9; padding: 2rem; font-family: system-ui, sans-serif; }
+    .container { max-width: 1400px; }
+    .card { border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+    .table-hover tbody tr:hover { background-color: #f8f9fa; }
+    .employee-header { font-size: 1.1rem; color: #495057; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+      <h1>Quản lý Hợp đồng Lao động</h1>
+      <p class="text-muted mb-1">Xem, thêm, sửa, xóa hợp đồng của tất cả nhân viên</p>
+      <div id="currentEmployeeInfo" class="employee-header d-none">
+        Đang hiển thị hợp đồng của: <strong id="employeeName"></strong>
+        <a href="#" id="showAllLink" class="ms-3 text-primary text-decoration-none">(Xem tất cả)</a>
+      </div>
+    </div>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#contractModal">
+      <span class="material-icons me-1">add</span> Thêm hợp đồng
+    </button>
+  </div>
+
+  <!-- Bộ lọc & tìm kiếm -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-5">
+      <input type="text" class="form-control" id="searchInput" placeholder="Tìm theo tên NV, loại hợp đồng, lương, ngày...">
+    </div>
+    <div class="col-md-3">
+      <select class="form-select" id="typeFilter">
+        <option value="">Tất cả loại hợp đồng</option>
+        <option value="FULL_TIME">Toàn thời gian</option>
+        <option value="PART_TIME">Bán thời gian</option>
+        <option value="INTERN">Thực tập</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <button class="btn btn-outline-secondary w-100" id="resetFilter">Reset</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body p-0">
+      <table class="table table-hover mb-0" id="contractTable">
+        <thead class="table-light">
+          <tr>
+            <th>Nhân viên</th>
+            <th>Loại hợp đồng</th>
+            <th>Lương (VND)</th>
+            <th>Thời hạn</th>
+            <th>Trạng thái</th>
+            <th>Thao tác</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Thêm/Sửa hợp đồng -->
+<div class="modal fade" id="contractModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Thêm / Sửa Hợp đồng</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="contractForm">
+        <div class="modal-body">
+          <input type="hidden" id="contractId">
+
+          <div class="mb-3">
+            <label class="form-label">Nhân viên <span class="text-danger">*</span></label>
+            <select class="form-select" id="employeeSelect" required></select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Loại hợp đồng <span class="text-danger">*</span></label>
+            <select class="form-select" id="contractType" required>
+              <option value="FULL_TIME">Toàn thời gian</option>
+              <option value="PART_TIME">Bán thời gian</option>
+              <option value="INTERN">Thực tập</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Mức lương (VND) <span class="text-danger">*</span></label>
+            <input type="number" class="form-control" id="salary" min="0" required>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Ngày bắt đầu <span class="text-danger">*</span></label>
+              <input type="date" class="form-control" id="startDate" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Ngày kết thúc</label>
+              <input type="date" class="form-control" id="endDate">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+          <button type="submit" class="btn btn-primary">Lưu hợp đồng</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// =============================================
+// CẤU HÌNH & BIẾN TOÀN CỤC
+// =============================================
+const API_BASE = '/api';
+let allContracts = [];
+
+// Lấy employeeId từ URL (chỉ dùng để hiển thị thông báo, không lọc)
+const urlParams = new URLSearchParams(window.location.search);
+const currentEmployeeId = urlParams.get('employeeId') || urlParams.get('id');
+
+// =============================================
+// HÀM CHÍNH
+// =============================================
+async function loadContracts() {
+  try {
+    const res = await fetch(`${API_BASE}/contracts`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const data = await res.json();
+    allContracts = normalizeContracts(data);
+
+    renderContracts(allContracts);
+
+    // Chỉ hiển thị thông báo nếu có employeeId trong URL
+    if (currentEmployeeId && allContracts.length > 0) {
+      const emp = allContracts.find(c => c.employee?.id == currentEmployeeId)?.employee;
+      if (emp) showCurrentEmployeeInfo(emp);
+    }
+
+  } catch (err) {
+    console.error("Lỗi tải hợp đồng:", err);
+    document.querySelector('#contractTable tbody').innerHTML = 
+      `<tr><td colspan="6" class="text-center text-danger py-4">Lỗi tải dữ liệu: ${err.message}</td></tr>`;
+  }
+}
+
+function normalizeContracts(data) {
+  if (Array.isArray(data)) return data;
+  if (data?.contracts && Array.isArray(data.contracts)) return data.contracts;
+  if (data?.data && Array.isArray(data.data)) return data.data;
+  return [];
+}
+
+function showCurrentEmployeeInfo(employee) {
+  if (!employee) return;
+  document.getElementById('employeeName').textContent = 
+    `${employee.firstName || ''} ${employee.lastName || ''} (${employee.email || '—'})`;
+  document.getElementById('currentEmployeeInfo').classList.remove('d-none');
+}
+
+// Reset về tất cả khi click "Xem tất cả"
+document.addEventListener('click', e => {
+  if (e.target.id === 'showAllLink') {
+    e.preventDefault();
+    document.getElementById('currentEmployeeInfo').classList.add('d-none');
+    filterTable(); // render lại toàn bộ
+  }
+});
+
+function renderContracts(contracts) {
+  const tbody = document.querySelector('#contractTable tbody');
+  tbody.innerHTML = contracts.map(c => `
+    <tr>
+      <td>${c.employee?.firstName || ''} ${c.employee?.lastName || ''}</td>
+      <td><span class="badge bg-primary">${c.contractType || '—'}</span></td>
+      <td>${Number(c.salary || 0).toLocaleString('vi-VN')} ₫</td>
+      <td>
+        ${c.startDate || '—'} → ${c.endDate || '<span class="text-success">Vô thời hạn</span>'}
+      </td>
+      <td>
+        ${new Date(c.endDate) > new Date() || !c.endDate 
+          ? '<span class="badge bg-success">Hiệu lực</span>' 
+          : '<span class="badge bg-secondary">Hết hạn</span>'}
+      </td>
+      <td>
+        <button class="btn btn-sm btn-outline-primary" onclick="editContract(${c.id})">Sửa</button>
+        <button class="btn btn-sm btn-outline-danger" onclick="deleteContract(${c.id})">Xóa</button>
+      </td>
+    </tr>
+  `).join('') || '<tr><td colspan="6" class="text-center py-4">Chưa có hợp đồng nào</td></tr>';
+}
+
+// =============================================
+// LOAD DANH SÁCH NHÂN VIÊN CHO SELECT
+// =============================================
+async function loadEmployeesForSelect() {
+  try {
+    const res = await fetch(`${API_BASE}/employees`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    });
+    if (!res.ok) throw new Error("Không tải được danh sách nhân viên");
+
+    const employees = normalizeContracts(await res.json());
+
+    const select = document.getElementById('employeeSelect');
+    select.innerHTML = '<option value="">Chọn nhân viên...</option>' +
+      employees.map(e => `
+        <option value="${e.id}">
+          ${e.firstName} ${e.lastName} (${e.email})
+        </option>
+      `).join('');
+
+  } catch (err) {
+    console.error("Lỗi tải nhân viên:", err);
+  }
+}
+
+// =============================================
+// SỬA HỢP ĐỒNG
+// =============================================
+async function editContract(id) {
+  try {
+    const res = await fetch(`${API_BASE}/contracts/${id}`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    });
+    if (!res.ok) throw new Error("Không tìm thấy hợp đồng");
+
+    const c = await res.json();
+
+    document.getElementById('contractId').value = c.id;
+    document.getElementById('employeeSelect').value = c.employee?.id || '';
+    document.getElementById('contractType').value = c.contractType || 'FULL_TIME';
+    document.getElementById('salary').value = c.salary || '';
+    document.getElementById('startDate').value = c.startDate?.split('T')[0] || '';
+    document.getElementById('endDate').value = c.endDate?.split('T')[0] || '';
+
+    document.querySelector('#contractModal .modal-title').textContent = 'Sửa hợp đồng';
+    new bootstrap.Modal(document.getElementById('contractModal')).show();
+
+  } catch (err) {
+    alert('Không thể mở thông tin hợp đồng: ' + err.message);
+  }
+}
+
+// =============================================
+// SUBMIT FORM
+// =============================================
+document.getElementById('contractForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const id = document.getElementById('contractId').value;
+  const method = id ? 'PUT' : 'POST';
+  const url = id ? `${API_BASE}/contracts/${id}` : `${API_BASE}/contracts`;
+
+  const employeeId = parseInt(document.getElementById('employeeSelect').value);
+  if (!employeeId) return alert('Vui lòng chọn nhân viên!');
+
+  const data = {
+    contractType: document.getElementById('contractType').value,
+    salary: parseFloat(document.getElementById('salary').value) || 0,
+    startDate: document.getElementById('startDate').value,
+    endDate: document.getElementById('endDate').value || null,
+    employee: { id: employeeId }
+  };
+
+  try {
+    const res = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify(data)
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(errText || 'Lưu thất bại');
+    }
+
+    bootstrap.Modal.getInstance(document.getElementById('contractModal')).hide();
+    loadContracts();
+    alert('Lưu hợp đồng thành công!');
+
+  } catch (err) {
+    alert('Lỗi khi lưu: ' + err.message);
+  }
+});
+
+// =============================================
+// XÓA HỢP ĐỒNG
+// =============================================
+async function deleteContract(id) {
+  if (!confirm('Xác nhận xóa hợp đồng này?')) return;
+  try {
+    const res = await fetch(`${API_BASE}/contracts/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    });
+    if (res.ok) {
+      loadContracts();
+      alert('Đã xóa hợp đồng');
+    } else {
+      alert('Xóa thất bại!');
+    }
+  } catch (err) {
+    alert('Lỗi: ' + err.message);
+  }
+}
+
+// =============================================
+// FILTER CLIENT-SIDE
+// =============================================
+function filterTable() {
+  const search = document.getElementById('searchInput').value.toLowerCase().trim();
+  const type = document.getElementById('typeFilter').value;
+
+  const filtered = allContracts.filter(c => {
+    const text = [
+      (c.employee?.firstName || '') + ' ' + (c.employee?.lastName || ''),
+      c.contractType || '',
+      c.salary?.toString() || '',
+      c.startDate || '',
+      c.endDate || ''
+    ].join(' ').toLowerCase();
+
+    return text.includes(search) &&
+           (!type || c.contractType === type);
+  });
+
+  renderContracts(filtered);
+}
+
+// =============================================
+// KHỞI TẠO
+// =============================================
+document.addEventListener('DOMContentLoaded', () => {
+  loadContracts();
+  loadEmployeesForSelect();
+
+  document.getElementById('searchInput').addEventListener('input', filterTable);
+  document.getElementById('typeFilter').addEventListener('change', filterTable);
+  document.getElementById('resetFilter').onclick = () => {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('typeFilter').value = '';
+    filterTable();
+  };
+});
+</script>
+</body>
+</html>

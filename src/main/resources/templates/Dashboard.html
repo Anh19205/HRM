@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Employee Management Dashboard</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+body {
+  font-family: 'Poppins', sans-serif;
+  background:
+    radial-gradient(circle at 10% 20%, rgba(63, 81, 181, 0.08), transparent 25%),
+    radial-gradient(circle at 90% 10%, rgba(255, 152, 0, 0.08), transparent 25%),
+    linear-gradient(180deg, #f7f8fc 0%, #eef1f8 50%, #f9fafc 100%);
+}
+
+/* ===== DASHBOARD HEADER ===== */
+.dashboard-hero {
+  background: linear-gradient(135deg, #1E3C72, #2A5298);
+  border-radius: 20px;
+  padding: 32px;
+  color: #fff;
+  box-shadow: 0 25px 60px rgba(30, 60, 114, 0.35);
+}
+
+.dashboard-hero h4 {
+  font-weight: 600;
+}
+
+.dashboard-hero p {
+  opacity: 0.85;
+}
+
+/* ===== STAT CARDS ===== */
+.stat-card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 22px;
+  text-align: center;
+  box-shadow: 0 15px 40px rgba(15, 23, 42, 0.08);
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 25px 55px rgba(15, 23, 42, 0.12);
+}
+
+.stat-card h6 {
+  font-weight: 500;
+  color: #64748b;
+}
+
+.stat-card h2 {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* ===== CARDS ===== */
+.card {
+  border-radius: 20px;
+  border: none;
+  box-shadow: 0 15px 45px rgba(15, 23, 42, 0.08);
+}
+
+.card h6 {
+  font-weight: 600;
+  margin-bottom: 15px;
+}
+
+/* ===== LIST ===== */
+.list-group-item {
+  border: none;
+  padding: 14px 10px;
+  font-weight: 500;
+  color: #334155;
+}
+
+body { background: #f4f6f9; }
+.card {
+  border-radius: 14px;
+  box-shadow: 0 10px 35px rgba(0,0,0,.08);
+}
+.chart-wrapper {
+  max-width: 280px;
+  margin: 0 auto;
+}
+
+</style>
+</head>
+
+<body>
+  <div th:replace="Navbar :: navbar"></div>
+<div class="container my-4">
+
+  <!-- HEADER -->
+  <div class="dashboard-hero mb-4">
+  <h4>
+    Welcome back, <span id="username">User</span> 👋
+  </h4>
+  <p class="mb-0">
+    Employee Management Dashboard – Real-time insights & analytics
+  </p>
+</div>
+
+  <!-- METRICS -->
+<div class="row g-4 mb-4">
+
+  <div class="col-md-4">
+    <div class="card p-3 text-center text-white"
+         style="background: linear-gradient(135deg,#36D1DC,#5B86E5);">
+      <h6>Total Employees</h6>
+      <h2 id="totalEmployees">0</h2>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card p-3 text-center text-white"
+         style="background: linear-gradient(135deg,#11998E,#38EF7D);">
+      <h6>Total Departments</h6>
+      <h2 id="totalDepartments">0</h2>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card p-3 text-center text-white"
+         style="background: linear-gradient(135deg,#F7971E,#FFD200);">
+      <h6>Average Age</h6>
+      <h2 id="averageAge">0</h2>
+    </div>
+  </div>
+
+</div>
+
+  <!-- CHARTS -->
+  <div class="row g-4">
+    <div class="col-md-6">
+      <div class="card p-3">
+        <h6>Employees by Department</h6>
+        <canvas id="departmentChart"></canvas>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="card p-3">
+        <h6>Age Distribution</h6>
+        <canvas id="ageChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+
+
+
+  <div class="row g-4 mt-1">
+  <div class="col-md-12">
+    <div class="card p-3">
+      <h6>Employee Growth (By ID Order)</h6>
+      <canvas id="growthChart"></canvas>
+    </div>
+  </div>
+</div>
+
+
+  <!-- RECENT EMPLOYEES -->
+  <div class="card p-3 mt-4">
+    <h6>Recent Employees</h6>
+    <ul id="recentEmployees" class="list-group list-group-flush"></ul>
+  </div>
+
+</div>
+
+<script>
+/* ================= AUTH FETCH ================= */
+function authFetch(url, options = {}) {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    alert("Bạn chưa đăng nhập");
+    window.location.href = "/login";
+    return Promise.reject("No token");
+  }
+
+  return fetch(url, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + token,
+      ...(options.headers || {})
+    }
+  });
+}
+
+/* ================= API ================= */
+const EMP_API = "http://localhost:8080/api/employees";
+const DEP_API = "http://localhost:8080/api/departments";
+
+/* ================= LOAD DASHBOARD ================= */
+async function loadDashboard() {
+  try {
+    const [empRes, depRes] = await Promise.all([
+      authFetch(EMP_API),
+      authFetch(DEP_API)
+    ]);
+
+    if (!empRes.ok || !depRes.ok) {
+      console.error("API error", empRes.status, depRes.status);
+      return;
+    }
+
+    // ✅ CHỈ parse JSON 1 LẦN
+    const empData = await empRes.json();
+    const depData = await depRes.json();
+
+    const employees = Array.isArray(empData) ? empData : [];
+    const departments = Array.isArray(depData) ? depData : [];
+
+    /* TOTAL */
+    document.getElementById("totalEmployees").innerText = employees.length;
+    document.getElementById("totalDepartments").innerText = departments.length;
+
+    /* AVG AGE */
+    const avgAge =
+      employees.length === 0
+        ? 0
+        : employees.reduce((sum, e) => sum + (e.age || 0), 0) / employees.length;
+
+    document.getElementById("averageAge").innerText = avgAge.toFixed(1);
+
+ if (departments.length > 0) drawDepartmentChart(departments);
+  if (employees.length > 0) drawAgeChart(employees);
+
+drawTotalOverviewChart(employees, departments);
+drawGrowthChart(employees);
+
+    showRecentEmployees(employees);
+
+  } catch (err) {
+    console.error("Dashboard load error:", err);
+  }
+}
+
+/* ================= CHARTS ================= */
+function drawDepartmentChart(departments) {
+  const labels = departments.map(d => d.name || "Unknown");
+  const data = departments.map(d =>
+    Array.isArray(d.employees) ? d.employees.length : 0
+  );
+
+  new Chart(document.getElementById("departmentChart"), {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        label: "Employees",
+        data
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: { y: { beginAtZero: true } }
+    }
+  });
+}
+
+function drawAgeChart(employees) {
+  const ranges = { "20-29": 0, "30-39": 0, "40-49": 0, "50+": 0 };
+
+  employees.forEach(e => {
+    if (!e.age) return;
+    if (e.age < 30) ranges["20-29"]++;
+    else if (e.age < 40) ranges["30-39"]++;
+    else if (e.age < 50) ranges["40-49"]++;
+    else ranges["50+"]++;
+  });
+
+  new Chart(document.getElementById("ageChart"), {
+    type: "pie",
+    data: {
+      labels: Object.keys(ranges),
+      datasets: [{
+        data: Object.values(ranges)
+      }]
+    }
+  });
+}
+function drawTotalOverviewChart(employees, departments) {
+  const active = employees.filter(e => e.status === "ACTIVE").length;
+  const inactive = employees.length - active;
+
+  new Chart(document.getElementById("totalOverviewChart"), {
+    type: "doughnut",
+    data: {
+      labels: [
+        "Active Employees",
+        "Inactive Employees",
+        "Departments"
+      ],
+      datasets: [{
+        data: [active, inactive, departments.length]
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,   // 🔥 QUAN TRỌNG
+      cutout: "55%",               // giống pie hơn
+      plugins: {
+        legend: {
+          position: "bottom"
+        }
+      }
+    }
+  });
+}
+
+/* ================= RECENT EMPLOYEES ================= */
+function showRecentEmployees(employees) {
+  const list = document.getElementById("recentEmployees");
+  list.innerHTML = "";
+
+  employees
+    .slice()
+    .sort((a, b) => (b.id || 0) - (a.id || 0))
+    .slice(0, 5)
+    .forEach(e => {
+      const li = document.createElement("li");
+      li.className = "list-group-item";
+      li.innerText =
+        `${e.firstName || ""} ${e.lastName || ""} - ${e.department?.name || ""}`;
+      list.appendChild(li);
+    });
+}
+
+/* ================= USER FROM JWT ================= */
+function parseJwt(token) {
+  try {
+    return JSON.parse(atob(token.split(".")[1]));
+  } catch {
+    return null;
+  }
+}
+
+function loadUser() {
+  const token = localStorage.getItem("token");
+  if (!token) return;
+
+  const payload = parseJwt(token);
+  if (payload?.sub) {
+    document.getElementById("username").innerText =
+      payload.sub + (payload.role ? " (" + payload.role + ")" : "");
+  }
+}
+
+function drawGrowthChart(employees) {
+  const sorted = [...employees].sort((a, b) => (a.id || 0) - (b.id || 0));
+
+  const labels = sorted.map((_, i) => `#${i + 1}`);
+  const data = sorted.map((_, i) => i + 1);
+
+  new Chart(document.getElementById("growthChart"), {
+    type: "line",
+    data: {
+      labels,
+      datasets: [{
+        label: "Total Employees",
+        data,
+        tension: 0.4,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { beginAtZero: true }
+      }
+    }
+  });
+}
+
+
+/* ================= INIT ================= */
+window.onload = () => {
+  loadUser();
+  loadDashboard();
+};
+</script>
+
+
+</body>
+</html>
