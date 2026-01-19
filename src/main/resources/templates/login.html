@@ -230,24 +230,19 @@
 
       localStorage.setItem('token', data.token);
       localStorage.setItem('EMSusername', username);
+      localStorage.setItem("role", data.role);
 
-      showToast(`Chào mừng trở lại, ${username}!`, 'success');
-localStorage.setItem('token', data.token);
-localStorage.setItem('EMSusername', username);
+showToast(`Chào mừng trở lại, ${username}!`, 'success');
 
-// 👉 LẤY ROLE USER
-const meRes = await fetch(`${API_BASE}/api/auth/me`, {
-  headers: {
-    "Authorization": "Bearer " + data.token
+setTimeout(() => {
+  if (data.role === 'ADMIN') {
+    window.location.href = '/Admin';
+  } else {
+    window.location.href =
+      new URLSearchParams(window.location.search).get('from') || '/';
   }
-});
+}, 1200);
 
-if (!meRes.ok) {
-  throw new Error("Không lấy được thông tin người dùng");
-}
-
-const me = await meRes.json();
-const role = me.role;
 
 //showToast(`Chào mừng trở lại, ${username}!`, 'success');
 

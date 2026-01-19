@@ -138,13 +138,16 @@ body {
 <div class="overlay" id="overlay" onclick="toggleDrawer()"></div>
 
 <script>
+  const role = localStorage.getItem('role'); 
+// ADMIN | DEPARTMENT | EMPLOYEE
+
 const routes = [
-  { path: '/', label: 'Home' },
-  { path: '/dashboard', label: 'Dashboard' },
-  { path: '/employees', label: 'Employees' },
-  { path: '/departments', label: 'Departments' },
-  { path: '/schedule', label: 'Work Schedules' },
-  { path: '/profile', label: 'Profile' },
+  { path: '/', label: 'Home', roles: ['ADMIN', 'DEPARTMENT', 'EMPLOYEE'] },
+  { path: '/dashboard', label: 'Dashboard', roles: ['ADMIN', 'DEPARTMENT', 'EMPLOYEE'] },
+  { path: '/employees', label: 'Employees', roles: ['ADMIN', 'DEPARTMENT', 'EMPLOYEE'] },
+  { path: '/departments', label: 'Departments', roles: ['ADMIN', 'DEPARTMENT'] },
+  { path: '/schedule', label: 'Work Schedules', roles: ['ADMIN', 'DEPARTMENT'] },
+  { path: '/profile', label: 'Profile', roles: ['ADMIN', 'DEPARTMENT', 'EMPLOYEE'] },
 ];
 
 const currentPath = window.location.pathname;
@@ -162,14 +165,33 @@ function buildMenu(container, isDrawer = false) {
   container.innerHTML = '';
 
   routes.forEach(r => {
+    if (!role || !r.roles.includes(role)) return;
+
     const link = document.createElement('a');
     link.href = r.path;
     link.textContent = r.label;
     if (isActive(r.path)) link.classList.add('active');
-    link.onclick = isDrawer ? toggleDrawer : null;
+    if (isDrawer) link.onclick = toggleDrawer;
+
     container.appendChild(link);
   });
 
+  // ===== ADMIN =====
+  if (isLoggedIn && role === 'ADMIN') {
+    const admin = document.createElement('a');
+    admin.href = '/Admin';
+    admin.textContent = 'Admin';
+    if (isActive('/Admin')) admin.classList.add('active');
+    container.appendChild(admin);
+
+    // Register -> chuyển sang Admin
+    const register = document.createElement('a');
+    register.href = '/Admin';
+    register.textContent = 'Register';
+    container.appendChild(register);
+  }
+
+  // ===== LOGIN / LOGOUT =====
   if (isLoggedIn) {
     const logout = document.createElement(isDrawer ? 'a' : 'button');
     logout.textContent = 'Logout';
@@ -183,16 +205,7 @@ function buildMenu(container, isDrawer = false) {
     if (isActive('/login')) login.classList.add('active');
     container.appendChild(login);
   }
-
-  const register = document.createElement('a');
-  register.href = '/register';
-  register.textContent = 'Register';
-  if (isActive('/register')) register.classList.add('active');
-  container.appendChild(register);
 }
-
-buildMenu(desktopMenu);
-buildMenu(drawer, true);
 
 function toggleDrawer() {
   drawer.classList.toggle('open');
@@ -202,8 +215,14 @@ function toggleDrawer() {
 function handleLogout() {
   localStorage.removeItem('token');
   localStorage.removeItem('EMSusername');
+  localStorage.removeItem('role'); 
   window.location.href = '/';
 }
+console.log('ROLE =', role);
+buildMenu(desktopMenu);
+buildMenu(drawer, true);
+
+
 </script>
 
 </body>
