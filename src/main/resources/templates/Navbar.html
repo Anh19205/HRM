@@ -138,15 +138,17 @@ body {
 <div class="overlay" id="overlay" onclick="toggleDrawer()"></div>
 
 <script>
-  const role = localStorage.getItem('role'); 
+const rawRole = localStorage.getItem('role');
+const role = rawRole?.replace('ROLE_', '');
+
 // ADMIN | DEPARTMENT | EMPLOYEE
 
 const routes = [
   { path: '/', label: 'Home', roles: ['ADMIN', 'DEPARTMENT', 'EMPLOYEE'] },
   { path: '/dashboard', label: 'Dashboard', roles: ['ADMIN', 'DEPARTMENT', 'EMPLOYEE'] },
-  { path: '/employees', label: 'Employees', roles: ['ADMIN', 'DEPARTMENT', 'EMPLOYEE'] },
+  { path: '/employees', label: 'Employees', roles: ['ADMIN', 'DEPARTMENT'] },
   { path: '/departments', label: 'Departments', roles: ['ADMIN', 'DEPARTMENT'] },
-  { path: '/schedule', label: 'Work Schedules', roles: ['ADMIN', 'DEPARTMENT'] },
+  { path: '/schedule', label: 'Work Schedules', roles: ['ADMIN', 'DEPARTMENT','EMPLOYEE'] },
   { path: '/profile', label: 'Profile', roles: ['ADMIN', 'DEPARTMENT', 'EMPLOYEE'] },
 ];
 

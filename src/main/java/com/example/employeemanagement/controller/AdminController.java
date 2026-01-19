@@ -106,44 +106,4 @@ public ResponseEntity<?> updateUser(
             "message", "User created successfully"
     ));
 }
-@PostMapping("/change-password")
-public ResponseEntity<?> changeMyPassword(@RequestBody ChangePasswordRequest request) {
-    if (request.getNewPassword() == null || request.getNewPassword().length() < 6) {
-        return ResponseEntity.badRequest().body(Map.of(
-            "success", false,
-            "message", "Mật khẩu mới phải có ít nhất 6 ký tự"
-        ));
-    }
-
-    if (!request.getNewPassword().equals(request.getConfirmNewPassword())) {
-        return ResponseEntity.badRequest().body(Map.of(
-            "success", false,
-            "message", "Mật khẩu xác nhận không khớp"
-        ));
-    }
-
-    // Lấy thông tin user hiện tại từ Security Context (JWT)
-    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    String currentUsername = auth.getName();
-
-    User user = userRepository.findByUsername(currentUsername)
-            .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản"));
-
-    // Kiểm tra mật khẩu hiện tại có đúng không
-    if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
-        return ResponseEntity.badRequest().body(Map.of(
-            "success", false,
-            "message", "Mật khẩu hiện tại không đúng"
-        ));
-    }
-
-    // Cập nhật mật khẩu mới
-    user.setPassword(passwordEncoder.encode(request.getNewPassword()));
-    userRepository.save(user);
-
-    return ResponseEntity.ok(Map.of(
-        "success", true,
-        "message", "Đổi mật khẩu thành công"
-    ));
-}
 }

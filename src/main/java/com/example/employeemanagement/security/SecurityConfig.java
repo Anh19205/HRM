@@ -62,13 +62,21 @@ protected void configure(HttpSecurity http) throws Exception {
                 "/profile",
                 "/forgotPassword",
                 "/workscheduleview/**"
+                
             ).permitAll()
             .antMatchers( "/api/employees", "/api/departments").permitAll()
+            
 
-            // API
-            .antMatchers("/api/auth/**").permitAll()
-            .antMatchers("/api/admin/**").hasRole("ADMIN")
-            .antMatchers("/api/**").authenticated()
+           .antMatchers("/api/auth/**").permitAll()
+
+// ADMIN
+.antMatchers("/api/admin/**").hasRole("ADMIN")
+
+// USER + ADMIN
+.antMatchers("/api/users/**").authenticated()
+
+// các API khác
+.antMatchers("/api/**").authenticated()
             
 
             .anyRequest().authenticated()
