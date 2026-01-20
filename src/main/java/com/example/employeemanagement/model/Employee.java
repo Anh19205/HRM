@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import java.util.ArrayList;
 import javax.persistence.*;
@@ -36,7 +37,7 @@ public class Employee {
     private Department department;
 
     @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference
+ @JsonIgnoreProperties({"employee"})
     private List<WorkSchedule> workSchedules = new ArrayList<>();
 
     // ... getter/setter nếu không dùng Lombok @Data

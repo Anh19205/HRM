@@ -186,11 +186,7 @@ function buildMenu(container, isDrawer = false) {
     if (isActive('/Admin')) admin.classList.add('active');
     container.appendChild(admin);
 
-    // Register -> chuyển sang Admin
-    const register = document.createElement('a');
-    register.href = '/Admin';
-    register.textContent = 'Register';
-    container.appendChild(register);
+
   }
 
   // ===== LOGIN / LOGOUT =====

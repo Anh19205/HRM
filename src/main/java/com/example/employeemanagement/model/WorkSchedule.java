@@ -4,6 +4,7 @@ import lombok.*;
 import javax.persistence.*;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import java.time.LocalDate;
@@ -24,7 +25,7 @@ public class WorkSchedule {
     private String shift; // e.g., "Morning", "Afternoon", "Night"
     @ManyToOne
 @JoinColumn(name = "employee_id", nullable = false)
-@JsonBackReference
+@JsonIgnoreProperties({"workSchedules"})
 private Employee employee;
 
 }

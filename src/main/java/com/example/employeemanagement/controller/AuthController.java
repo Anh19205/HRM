@@ -306,7 +306,7 @@ public class AuthController {
         User user = userRepository.findByUsername(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // ❌ không trả password
+        //  không trả password
         user.setPassword(null);
 
         return ResponseEntity.ok(user);
